@@ -2,7 +2,7 @@
 FROM eclipse-temurin:17-jdk-alpine
 
 # 2. Set the working directory inside the cloud computer
-WORKDIR/app
+WORKDIR /app
 
 # 3. Copy the Maven wrapper and project files
 COPY .mvn/ .mvn
