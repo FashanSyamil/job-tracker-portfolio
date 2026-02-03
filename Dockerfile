@@ -1,25 +1,20 @@
-# 1. Use a base image with Java 17
-FROM eclipse-temurin:17-jdk-alpine
-
-# 2. Set the working directory inside the cloud computer
+# --- Stage 1: Build the App (Using a pre-installed Maven image) ---
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# 3. Copy the Maven wrapper and project files
-COPY .mvn/ .mvn
-COPY mvnw pom.xml
+# Copy all files
+COPY . .
 
-# 4. Convert Windows line endings to Linux (Important for "mvmw")
-RUN sed -i 's/\r$//' mvnw
-RUN chmod +x mvnw
+# Build the app (skipping the wrapper script entirely)
+RUN mvn clean package -DskipTests
 
-# 5. Download the dependencies (This layer will be cached)
-RUN ./mvnw dependency:go-offline
+# --- Stage 2: Run the App (Using a lightweight Java image) ---
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
 
-# 6. Copy the source code
-COPY src ./src
+# Copy the JAR file from Stage 1
+# Note: make sure the name 'jobtracker' matches your artifactId
+COPY --from=build /app/target/jobtracker-0.0.1-SNAPSHOT.jar app.jar
 
-# 7. Build the app
-RUN ./mvnw clean package -DskipTests
-
-# 8. Run the app
-CMD ["java", "-jar", "target/jobtracker-0.0.1-SNAPSHOT.jar"]
+# Run it
+ENTRYPOINT ["java","-jar","app.jar"]
